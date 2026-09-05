@@ -1,0 +1,62 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+ENV/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local database and database backups
+data/*.db
+data/*.db-*
+data/*.db.*
+data/*.sqlite
+data/*.sqlite3
+data/*.private
+data/*.secret
+
+# Client private keys
+data/client_keys/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Certificates / private certificate material
+*.crt
+*.cer
+
+# Logs and runtime files
+*.log
+logs/
+
+# Python tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local backups and temporary files
+*.bak
+*.bak_*
+*.backup
+*.backup_*
+*.tmp
+*.private
+
+# Accidental local files
+Новый текстовый документ.txt
