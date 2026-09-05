@@ -42,6 +42,7 @@ async def unhandled_exception_handler(
             "detail": "Internal Server Error"
         },
         headers={
+            "Cache-Control": "no-store",
             "X-Content-Type-Options": "nosniff",
             "X-Frame-Options": "DENY",
             "Referrer-Policy": "no-referrer",
@@ -64,6 +65,7 @@ async def security_headers_middleware(
 ):
     response = await call_next(request)
 
+    response.headers["Cache-Control"] = "no-store"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
