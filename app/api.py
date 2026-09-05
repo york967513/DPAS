@@ -1,4 +1,5 @@
-﻿from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.auth_manager import login
@@ -24,6 +25,32 @@ app = FastAPI(
     title="DPAS",
     version="0.9.2"
 )
+
+
+# ========================================
+# GLOBAL INTERNAL ERROR HANDLER
+# ========================================
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(
+    request: Request,
+    exc: Exception
+):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal Server Error"
+        },
+        headers={
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Referrer-Policy": "no-referrer",
+            "Content-Security-Policy": "default-src 'none'",
+            "Permissions-Policy": (
+                "geolocation=(), microphone=(), camera=()"
+            )
+        }
+    )
 
 
 # ========================================
