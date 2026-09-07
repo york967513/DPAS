@@ -155,26 +155,6 @@ class ProfileWriteRequest(BaseModel):
 # HEALTH CHECK
 # ========================================
 
-def require_auth_rate_limit(
-    request: Request,
-):
-    client = request.client
-
-    if client is None:
-        client_ip = "unknown"
-    else:
-        client_ip = client.host
-
-    if is_rate_limited(
-        client_ip,
-        "authentication"
-    ):
-        raise HTTPException(
-            status_code=429,
-            detail="Too many requests",
-            headers={"Retry-After": "60"}
-        )
-
 @app.get("/health")
 def health():
 
