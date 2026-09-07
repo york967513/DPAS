@@ -1,4 +1,4 @@
-﻿import time
+import time
 from collections import defaultdict, deque
 
 
@@ -21,7 +21,7 @@ def is_rate_limited(
     path: str
 ) -> bool:
     now = time.monotonic()
-    key = f"{client_ip}:{path}"
+    key = f"{client_ip}:authentication"
 
     with _lock:
         hits = _rate_limit_hits[key]
