@@ -17,7 +17,13 @@ from app.server_auth import (
 )
 from app.database import (
     get_all_users,
-    delete_user
+    delete_user,
+    record_audit_event
+)
+from app.rate_limiter import (
+    RATE_LIMITED_PATHS,
+    RATE_LIMIT_WINDOW_SECONDS,
+    is_rate_limited
 )
 
 
@@ -53,6 +59,51 @@ async def unhandled_exception_handler(
         }
     )
 
+
+# ========================================
+# IP-BASED RATE LIMITING (AUTH ENDPOINTS)
+# ========================================
+
+@app.middleware("http")
+async def rate_limit_middleware(
+    request: Request,
+    call_next
+):
+    if request.url.path in RATE_LIMITED_PATHS:
+
+        client = request.client
+
+        if client is None:
+            client_ip = "unknown"
+        else:
+            client_ip = client.host
+
+        if is_rate_limited(
+            client_ip,
+            request.url.path
+        ):
+            record_audit_event(
+                event_type="AUTHENTICATION",
+                action="RATE_LIMITED",
+                result="FAILURE",
+                username=None,
+                resource=request.url.path,
+                details="Too many requests from this client"
+            )
+
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "detail": "Too many requests"
+                },
+                headers={
+                    "Retry-After": str(
+                        RATE_LIMIT_WINDOW_SECONDS
+                    )
+                }
+            )
+
+    return await call_next(request)
 
 # ========================================
 # SECURITY HEADERS
@@ -103,6 +154,26 @@ class ProfileWriteRequest(BaseModel):
 # ========================================
 # HEALTH CHECK
 # ========================================
+
+def require_auth_rate_limit(
+    request: Request,
+):
+    client = request.client
+
+    if client is None:
+        client_ip = "unknown"
+    else:
+        client_ip = client.host
+
+    if is_rate_limited(
+        client_ip,
+        "authentication"
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests",
+            headers={"Retry-After": "60"}
+        )
 
 @app.get("/health")
 def health():
