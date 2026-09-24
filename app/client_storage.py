@@ -3,6 +3,7 @@ from pathlib import Path
 
 CLIENT_DATA_PATH = Path("data/client_keys")
 
+
 _WINDOWS_RESERVED_NAMES = {
     "CON",
     "PRN",
@@ -11,6 +12,7 @@ _WINDOWS_RESERVED_NAMES = {
     *(f"COM{i}" for i in range(1, 10)),
     *(f"LPT{i}" for i in range(1, 10)),
 }
+
 
 _WINDOWS_INVALID_CHARS = set('<>:"/\\|?*')
 
@@ -84,6 +86,18 @@ def _get_private_key_path(username: str) -> Path:
     return candidate
 
 
+def _validate_private_key_file(file_path: Path):
+    try:
+        link_count = file_path.stat().st_nlink
+    except OSError:
+        raise
+
+    if link_count > 1:
+        raise ValueError(
+            "Invalid client key file"
+        )
+
+
 def save_private_key(
     username: str,
     encrypted_private_key: bytes
@@ -91,6 +105,11 @@ def save_private_key(
     file_path = _get_private_key_path(
         username
     )
+
+    if file_path.exists():
+        _validate_private_key_file(
+            file_path
+        )
 
     file_path.write_bytes(
         encrypted_private_key
@@ -106,5 +125,9 @@ def load_private_key(
 
     if not file_path.exists():
         return None
+
+    _validate_private_key_file(
+        file_path
+    )
 
     return file_path.read_bytes()
