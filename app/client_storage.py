@@ -115,27 +115,59 @@ def _validate_username_for_filename(username: str):
         )
 
 
+def _get_client_root() -> Path:
+    configured_root = Path(
+        os.path.abspath(
+            os.fspath(CLIENT_DATA_PATH)
+        )
+    )
+
+    reparse_attribute = 0x0400
+    current = Path(configured_root.anchor)
+
+    # Validate every path component, including client_keys itself.
+    for component in configured_root.parts[1:]:
+        current = current / component
+
+        try:
+            information = current.lstat()
+        except FileNotFoundError:
+            try:
+                current.mkdir()
+            except FileExistsError:
+                pass
+            information = current.lstat()
+        except OSError as exc:
+            raise ValueError(
+                "Invalid client key directory"
+            ) from exc
+
+        attributes = getattr(
+            information,
+            "st_file_attributes",
+            0
+        )
+
+        if (
+            stat.S_ISLNK(information.st_mode)
+            or bool(attributes & reparse_attribute)
+            or not stat.S_ISDIR(information.st_mode)
+        ):
+            raise ValueError(
+                "Invalid client key directory"
+            )
+
+    return configured_root
+
+
 def _get_private_key_path(username: str) -> Path:
-    _validate_username_for_filename(
-        username
-    )
+    _validate_username_for_filename(username)
 
-    CLIENT_DATA_PATH.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
-    client_root = CLIENT_DATA_PATH.resolve()
-
-    candidate = (
-        CLIENT_DATA_PATH
-        / f"{username}.key"
-    ).resolve()
+    client_root = _get_client_root()
+    candidate = (client_root / f"{username}.key").resolve()
 
     if client_root not in candidate.parents:
-        raise ValueError(
-            "Invalid client key path"
-        )
+        raise ValueError("Invalid client key path")
 
     return candidate
 
@@ -392,7 +424,7 @@ def save_private_key(
         username
     )
 
-    client_root = CLIENT_DATA_PATH.resolve()
+    client_root = _get_client_root()
 
     binary_flag = getattr(
         os,
@@ -451,7 +483,7 @@ def load_private_key(
         username
     )
 
-    client_root = CLIENT_DATA_PATH.resolve()
+    client_root = _get_client_root()
 
     binary_flag = getattr(
         os,
